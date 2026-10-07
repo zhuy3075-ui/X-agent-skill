@@ -1,0 +1,18 @@
+# Put this server block inside the site's http context. Replace domain and certificate paths.
+server {
+    listen 443 ssl;
+    server_name monitor.example.com;
+    ssl_certificate /etc/ssl/scweet/fullchain.pem;
+    ssl_certificate_key /etc/ssl/scweet/privkey.pem;
+    client_max_body_size 4m;
+    location /mcp {
+        proxy_pass http://127.0.0.1:8765;
+        proxy_http_version 1.1;
+        proxy_set_header Host 127.0.0.1:8765;
+        # This endpoint is for configured agent clients. Do not expose a browser CORS gateway.
+        proxy_set_header Origin "";
+        proxy_set_header Authorization $http_authorization;
+        proxy_buffering off;
+        proxy_read_timeout 300s;
+    }
+}

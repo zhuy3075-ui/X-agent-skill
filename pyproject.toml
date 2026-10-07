@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "x-agent-skill"
+version = "1.0.0"
+description = "An MCP server, collector and skill for X creator research and PostgreSQL-backed monitoring"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+dependencies = [
+  "python-dotenv", "sqlmodel>=0.0.22", "SQLAlchemy>=2.0", "curl_cffi",
+  "beautifulsoup4", "XClientTransaction>=1.0.2", "pydantic>=2.0",
+  "mcp>=1.30,<2", "psycopg[binary]>=3.2,<4", "tzdata>=2025.1; sys_platform == 'win32'"
+]
+
+[project.urls]
+Repository = "https://github.com/zhuy3075-ui/X-agent-skill"
+Issues = "https://github.com/zhuy3075-ui/X-agent-skill/issues"
+
+[tool.setuptools]
+packages = ["Scweet", "scweet_mcp"]
+package-dir = {Scweet = "Scweet", scweet_mcp = "mcp/scweet_mcp"}
+
+[tool.setuptools.package-data]
+Scweet = ["default_manifest.json", "py.typed"]
+scweet_mcp = ["*.sql"]

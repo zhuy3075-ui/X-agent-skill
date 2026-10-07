@@ -1,0 +1,3130 @@
+{
+  "service": "scweet-monitoring",
+  "release": "1.0.0",
+  "tools": [
+    {
+      "name": "write_tweets",
+      "description": "Commit a batch of complete tweet objects. Replace records with the same tweet_id atomically.",
+      "inputSchema": {
+        "properties": {
+          "records": {
+            "description": "Scweet.search() JSON objects. tweet_id is required; timestamp, user and text are optional. No credentials.",
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Records",
+            "type": "array"
+          }
+        },
+        "required": [
+          "records"
+        ],
+        "title": "write_tweetsArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "received": {
+            "description": "Number of input records in the committed batch.",
+            "title": "Received",
+            "type": "integer"
+          },
+          "stored": {
+            "description": "Distinct IDs written. The last occurrence of an ID wins.",
+            "title": "Stored",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "received",
+          "stored"
+        ],
+        "title": "WriteResult",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_tweet",
+      "description": "Read one stored tweet by ID. A missing ID returns found=false and record=null.",
+      "inputSchema": {
+        "properties": {
+          "tweet_id": {
+            "description": "Exact tweet_id string.",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Tweet Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tweet_id"
+        ],
+        "title": "get_tweetArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "found": {
+            "title": "Found",
+            "type": "boolean"
+          },
+          "record": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The complete JSON record, or null if absent.",
+            "title": "Record"
+          }
+        },
+        "required": [
+          "found",
+          "record"
+        ],
+        "title": "ReadResult",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "query_tweets",
+      "description": "Filter stored tweets with AND. Order by UTC time then ID, descending; missing time comes last.",
+      "inputSchema": {
+        "properties": {
+          "author": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Exact user.screen_name, without @; case insensitive.",
+            "title": "Author"
+          },
+          "lang": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Exact language code; case insensitive.",
+            "title": "Lang"
+          },
+          "since": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Inclusive ISO 8601 start, with timezone.",
+            "title": "Since"
+          },
+          "until": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Exclusive ISO 8601 end, with timezone.",
+            "title": "Until"
+          },
+          "limit": {
+            "default": 50,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "next_cursor from the previous page with the same filters.",
+            "title": "Cursor"
+          }
+        },
+        "title": "query_tweetsArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "records": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Records",
+            "type": "array"
+          },
+          "count": {
+            "description": "Number of records in this page.",
+            "title": "Count",
+            "type": "integer"
+          },
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null at the end. Keep filters unchanged.",
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "records",
+          "count",
+          "has_more",
+          "next_cursor"
+        ],
+        "title": "QueryResult",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "search_tweets",
+      "description": "Search stored tweet text with the GIN index. Other filters and page order match query_tweets.",
+      "inputSchema": {
+        "properties": {
+          "text": {
+            "description": "Literal PostgreSQL simple token phrase in text or embedded_text, not a substring or query expression.",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "author": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Author"
+          },
+          "lang": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Lang"
+          },
+          "since": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Since"
+          },
+          "until": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Until"
+          },
+          "limit": {
+            "default": 50,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cursor"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "search_tweetsArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "records": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Records",
+            "type": "array"
+          },
+          "count": {
+            "description": "Number of records in this page.",
+            "title": "Count",
+            "type": "integer"
+          },
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null at the end. Keep filters unchanged.",
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "records",
+          "count",
+          "has_more",
+          "next_cursor"
+        ],
+        "title": "QueryResult",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "collect_author",
+      "description": "Collect posts and visible comments with a preferred account and configured pool failover, then save a report. Poll jobs_get.",
+      "inputSchema": {
+        "$defs": {
+          "CollectionRequest": {
+            "additionalProperties": false,
+            "properties": {
+              "account_id": {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9_.:-]+$",
+                "title": "Account Id",
+                "type": "string"
+              },
+              "target": {
+                "maxLength": 200,
+                "minLength": 1,
+                "title": "Target",
+                "type": "string"
+              },
+              "since": {
+                "title": "Since",
+                "type": "string"
+              },
+              "until": {
+                "title": "Until",
+                "type": "string"
+              },
+              "max_posts": {
+                "maximum": 10000,
+                "minimum": 1,
+                "title": "Max Posts",
+                "type": "integer"
+              },
+              "post_types": {
+                "items": {
+                  "enum": [
+                    "original",
+                    "reply",
+                    "quote",
+                    "repost"
+                  ],
+                  "type": "string"
+                },
+                "minItems": 1,
+                "title": "Post Types",
+                "type": "array"
+              },
+              "include_comments": {
+                "default": true,
+                "title": "Include Comments",
+                "type": "boolean"
+              },
+              "max_comment_posts": {
+                "default": 20,
+                "maximum": 100,
+                "minimum": 1,
+                "title": "Max Comment Posts",
+                "type": "integer"
+              },
+              "comment_scope": {
+                "default": "thread",
+                "enum": [
+                  "direct",
+                  "thread"
+                ],
+                "title": "Comment Scope",
+                "type": "string"
+              },
+              "max_pages": {
+                "default": 100,
+                "maximum": 10000,
+                "minimum": 1,
+                "title": "Max Pages",
+                "type": "integer"
+              },
+              "max_runtime_seconds": {
+                "default": 300,
+                "maximum": 86400,
+                "minimum": 1,
+                "title": "Max Runtime Seconds",
+                "type": "integer"
+              },
+              "timezone": {
+                "default": "UTC",
+                "title": "Timezone",
+                "type": "string"
+              }
+            },
+            "required": [
+              "account_id",
+              "target",
+              "since",
+              "until",
+              "max_posts"
+            ],
+            "title": "CollectionRequest",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "config": {
+            "$ref": "#/$defs/CollectionRequest"
+          },
+          "request_id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "config",
+          "request_id"
+        ],
+        "title": "collect_authorArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "submitted_at": {
+            "title": "Submitted At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id",
+          "status",
+          "submitted_at"
+        ],
+        "title": "JobReceipt",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "query_growth",
+      "description": "Read observed metric growth in UTC buckets. Null is unknown, and a single observation has no growth.",
+      "inputSchema": {
+        "properties": {
+          "post_id": {
+            "maxLength": 32,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "title": "Post Id",
+            "type": "string"
+          },
+          "since": {
+            "title": "Since",
+            "type": "string"
+          },
+          "until": {
+            "title": "Until",
+            "type": "string"
+          },
+          "bucket": {
+            "default": "day",
+            "enum": [
+              "hour",
+              "day"
+            ],
+            "title": "Bucket",
+            "type": "string"
+          }
+        },
+        "required": [
+          "post_id",
+          "since",
+          "until"
+        ],
+        "title": "query_growthArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "query_growthDictOutput",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "query_analysis_runs",
+      "description": "List saved author research summaries. Read jobs_get for the full report and viral-material evidence.",
+      "inputSchema": {
+        "properties": {
+          "author_id": {
+            "maxLength": 32,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "title": "Author Id",
+            "type": "string"
+          },
+          "limit": {
+            "default": 50,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cursor"
+          }
+        },
+        "required": [
+          "author_id"
+        ],
+        "title": "query_analysis_runsArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "records": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Records",
+            "type": "array"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "records",
+          "count",
+          "has_more",
+          "next_cursor"
+        ],
+        "title": "Page",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "monitor_upsert",
+      "description": "Only after an explicit user request for continuous monitoring, set monitoring_requested=true. Hourly sampling, no push.",
+      "inputSchema": {
+        "$defs": {
+          "AlertRule": {
+            "additionalProperties": false,
+            "properties": {
+              "metric": {
+                "enum": [
+                  "likes",
+                  "comments",
+                  "reposts",
+                  "views",
+                  "quotes"
+                ],
+                "title": "Metric",
+                "type": "string"
+              },
+              "window_seconds": {
+                "minimum": 60,
+                "title": "Window Seconds",
+                "type": "integer"
+              },
+              "min_delta": {
+                "minimum": 1,
+                "title": "Min Delta",
+                "type": "integer"
+              },
+              "min_ratio": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Min Ratio"
+              },
+              "direction": {
+                "default": "increase",
+                "enum": [
+                  "increase",
+                  "decrease"
+                ],
+                "title": "Direction",
+                "type": "string"
+              },
+              "cooldown_seconds": {
+                "default": 3600,
+                "minimum": 0,
+                "title": "Cooldown Seconds",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "metric",
+              "window_seconds",
+              "min_delta"
+            ],
+            "title": "AlertRule",
+            "type": "object"
+          },
+          "Alerts": {
+            "additionalProperties": false,
+            "properties": {
+              "new_posts": {
+                "default": true,
+                "title": "New Posts",
+                "type": "boolean"
+              },
+              "rules": {
+                "items": {
+                  "$ref": "#/$defs/AlertRule"
+                },
+                "maxItems": 30,
+                "title": "Rules",
+                "type": "array"
+              }
+            },
+            "title": "Alerts",
+            "type": "object"
+          },
+          "MetricSchedule": {
+            "additionalProperties": false,
+            "properties": {
+              "max_post_age_hours": {
+                "minimum": 1,
+                "title": "Max Post Age Hours",
+                "type": "integer"
+              },
+              "interval_seconds": {
+                "minimum": 60,
+                "title": "Interval Seconds",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "max_post_age_hours",
+              "interval_seconds"
+            ],
+            "title": "MetricSchedule",
+            "type": "object"
+          },
+          "MonitorConfig": {
+            "additionalProperties": false,
+            "properties": {
+              "author_id": {
+                "maxLength": 32,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "title": "Author Id",
+                "type": "string"
+              },
+              "enabled": {
+                "default": true,
+                "title": "Enabled",
+                "type": "boolean"
+              },
+              "timezone": {
+                "default": "UTC",
+                "title": "Timezone",
+                "type": "string"
+              },
+              "discovery_interval_seconds": {
+                "default": 3600,
+                "minimum": 3600,
+                "title": "Discovery Interval Seconds",
+                "type": "integer"
+              },
+              "initial_backfill_days": {
+                "default": 7,
+                "maximum": 3650,
+                "minimum": 0,
+                "title": "Initial Backfill Days",
+                "type": "integer"
+              },
+              "post_types": {
+                "items": {
+                  "enum": [
+                    "original",
+                    "reply",
+                    "quote",
+                    "repost"
+                  ],
+                  "type": "string"
+                },
+                "minItems": 1,
+                "title": "Post Types",
+                "type": "array"
+              },
+              "metrics": {
+                "items": {
+                  "enum": [
+                    "likes",
+                    "comments",
+                    "reposts",
+                    "views",
+                    "quotes"
+                  ],
+                  "type": "string"
+                },
+                "title": "Metrics",
+                "type": "array"
+              },
+              "metric_schedule": {
+                "items": {
+                  "$ref": "#/$defs/MetricSchedule"
+                },
+                "maxItems": 10,
+                "minItems": 1,
+                "title": "Metric Schedule",
+                "type": "array"
+              },
+              "comments_interval_seconds": {
+                "anyOf": [
+                  {
+                    "minimum": 3600,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Comments Interval Seconds"
+              },
+              "alerts": {
+                "$ref": "#/$defs/Alerts"
+              },
+              "destination_refs": {
+                "items": {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9_.:-]+$",
+                  "type": "string"
+                },
+                "maxItems": 10,
+                "title": "Destination Refs",
+                "type": "array"
+              },
+              "lookup_posts_per_run": {
+                "default": 5,
+                "maximum": 100,
+                "minimum": 1,
+                "title": "Lookup Posts Per Run",
+                "type": "integer"
+              },
+              "report_mode": {
+                "const": "on_demand",
+                "default": "on_demand",
+                "title": "Report Mode",
+                "type": "string"
+              }
+            },
+            "required": [
+              "author_id"
+            ],
+            "title": "MonitorConfig",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "config": {
+            "$ref": "#/$defs/MonitorConfig"
+          },
+          "request_id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          },
+          "monitor_id": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9_.:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Monitor Id"
+          },
+          "expected_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Expected Version"
+          },
+          "monitoring_requested": {
+            "default": false,
+            "title": "Monitoring Requested",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "config",
+          "request_id"
+        ],
+        "title": "monitor_upsertArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "monitor_id": {
+            "title": "Monitor Id",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "next_run_at": {
+            "title": "Next Run At",
+            "type": "string"
+          },
+          "estimated_requests_per_day": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Estimated Requests Per Day"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "monitor_id",
+          "version",
+          "enabled",
+          "next_run_at"
+        ],
+        "title": "MonitorResult",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "query_post_changes",
+      "description": "Read stored new/content/availability changes without collecting or creating monitors. Times are observations, suspected_deleted is unconfirmed.",
+      "inputSchema": {
+        "properties": {
+          "author_id": {
+            "maxLength": 32,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "title": "Author Id",
+            "type": "string"
+          },
+          "since": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Since"
+          },
+          "until": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Until"
+          },
+          "post_id": {
+            "anyOf": [
+              {
+                "maxLength": 32,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Post Id"
+          },
+          "limit": {
+            "default": 50,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cursor"
+          }
+        },
+        "required": [
+          "author_id"
+        ],
+        "title": "query_post_changesArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "records": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Records",
+            "type": "array"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "records",
+          "count",
+          "has_more",
+          "next_cursor"
+        ],
+        "title": "Page",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "monitors_list",
+      "description": "List monitor configuration, version, watermark, last error and scheduling lag.",
+      "inputSchema": {
+        "properties": {
+          "author_id": {
+            "anyOf": [
+              {
+                "maxLength": 32,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Author Id"
+          },
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Enabled"
+          },
+          "limit": {
+            "default": 50,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cursor"
+          }
+        },
+        "title": "monitors_listArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "records": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Records",
+            "type": "array"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "records",
+          "count",
+          "has_more",
+          "next_cursor"
+        ],
+        "title": "Page",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "monitor_set_state",
+      "description": "Enable or pause future scheduling, with optimistic version checking.",
+      "inputSchema": {
+        "properties": {
+          "monitor_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_.:-]+$",
+            "title": "Monitor Id",
+            "type": "string"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "expected_version": {
+            "title": "Expected Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "monitor_id",
+          "enabled",
+          "expected_version"
+        ],
+        "title": "monitor_set_stateArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "monitor_id": {
+            "title": "Monitor Id",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "next_run_at": {
+            "title": "Next Run At",
+            "type": "string"
+          },
+          "estimated_requests_per_day": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Estimated Requests Per Day"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "monitor_id",
+          "version",
+          "enabled",
+          "next_run_at"
+        ],
+        "title": "MonitorResult",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "monitor_run_now",
+      "description": "Queue one discovery run. Read jobs_get for progress; a paused monitor does no collection.",
+      "inputSchema": {
+        "properties": {
+          "monitor_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_.:-]+$",
+            "title": "Monitor Id",
+            "type": "string"
+          },
+          "request_id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "monitor_id",
+          "request_id"
+        ],
+        "title": "monitor_run_nowArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "submitted_at": {
+            "title": "Submitted At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id",
+          "status",
+          "submitted_at"
+        ],
+        "title": "JobReceipt",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "refresh_post_metrics",
+      "description": "Queue metric snapshots. Missing metrics are null, never fabricated zero values.",
+      "inputSchema": {
+        "properties": {
+          "post_ids": {
+            "items": {
+              "maxLength": 32,
+              "minLength": 1,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Post Ids",
+            "type": "array"
+          },
+          "request_id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "post_ids",
+          "request_id"
+        ],
+        "title": "refresh_post_metricsArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "submitted_at": {
+            "title": "Submitted At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id",
+          "status",
+          "submitted_at"
+        ],
+        "title": "JobReceipt",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "query_metric_snapshots",
+      "description": "Read immutable snapshots ordered by observation time descending.",
+      "inputSchema": {
+        "properties": {
+          "post_id": {
+            "maxLength": 32,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "title": "Post Id",
+            "type": "string"
+          },
+          "since": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Since"
+          },
+          "until": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Until"
+          },
+          "metrics": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "likes",
+                    "comments",
+                    "reposts",
+                    "views",
+                    "quotes"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Metrics"
+          },
+          "limit": {
+            "default": 50,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cursor"
+          }
+        },
+        "required": [
+          "post_id"
+        ],
+        "title": "query_metric_snapshotsArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "records": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Records",
+            "type": "array"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "records",
+          "count",
+          "has_more",
+          "next_cursor"
+        ],
+        "title": "Page",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "sync_comments",
+      "description": "Queue visible comment traversal. Budgets are capped by server config; read coverage before claiming completeness.",
+      "inputSchema": {
+        "properties": {
+          "post_id": {
+            "maxLength": 32,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "title": "Post Id",
+            "type": "string"
+          },
+          "request_id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          },
+          "mode": {
+            "default": "incremental",
+            "enum": [
+              "full",
+              "incremental",
+              "reconcile"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "scope": {
+            "default": "thread",
+            "enum": [
+              "direct",
+              "thread"
+            ],
+            "title": "Scope",
+            "type": "string"
+          },
+          "max_pages": {
+            "default": 100,
+            "maximum": 10000,
+            "minimum": 1,
+            "title": "Max Pages",
+            "type": "integer"
+          },
+          "max_runtime_seconds": {
+            "default": 300,
+            "maximum": 86400,
+            "minimum": 1,
+            "title": "Max Runtime Seconds",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "post_id",
+          "request_id"
+        ],
+        "title": "sync_commentsArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "submitted_at": {
+            "title": "Submitted At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id",
+          "status",
+          "submitted_at"
+        ],
+        "title": "JobReceipt",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "continue_comments",
+      "description": "Continue a terminal incomplete comment job from its saved cursor queue. Keeps post/scope fixed; new bounded batch, no repeated first page.",
+      "inputSchema": {
+        "properties": {
+          "job_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_.:-]+$",
+            "title": "Job Id",
+            "type": "string"
+          },
+          "request_id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          },
+          "max_pages": {
+            "default": 100,
+            "maximum": 10000,
+            "minimum": 1,
+            "title": "Max Pages",
+            "type": "integer"
+          },
+          "max_runtime_seconds": {
+            "default": 300,
+            "maximum": 86400,
+            "minimum": 1,
+            "title": "Max Runtime Seconds",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "job_id",
+          "request_id"
+        ],
+        "title": "continue_commentsArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "submitted_at": {
+            "title": "Submitted At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id",
+          "status",
+          "submitted_at"
+        ],
+        "title": "JobReceipt",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "query_author_archives",
+      "description": "Find an existing author archive by stable numeric identity or handle. Handles can change; author_id is canonical.",
+      "inputSchema": {
+        "properties": {
+          "author_id": {
+            "anyOf": [
+              {
+                "maxLength": 32,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Author Id"
+          },
+          "handle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Handle"
+          },
+          "limit": {
+            "default": 50,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cursor"
+          }
+        },
+        "title": "query_author_archivesArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "records": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Records",
+            "type": "array"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "records",
+          "count",
+          "has_more",
+          "next_cursor"
+        ],
+        "title": "Page",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "query_author_history",
+      "description": "Read durable operations and current outcomes for one author, newest first; a retry remains the same operation.",
+      "inputSchema": {
+        "properties": {
+          "author_id": {
+            "maxLength": 32,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "title": "Author Id",
+            "type": "string"
+          },
+          "limit": {
+            "default": 50,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cursor"
+          }
+        },
+        "required": [
+          "author_id"
+        ],
+        "title": "query_author_historyArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "records": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Records",
+            "type": "array"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "records",
+          "count",
+          "has_more",
+          "next_cursor"
+        ],
+        "title": "Page",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "query_author_data",
+      "description": "Read categorized author data. Comments belong to the root-post owner, not the commenter. Interactions are observed snapshots.",
+      "inputSchema": {
+        "properties": {
+          "author_id": {
+            "maxLength": 32,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "title": "Author Id",
+            "type": "string"
+          },
+          "category": {
+            "enum": [
+              "posts",
+              "comments",
+              "interactions"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "limit": {
+            "default": 50,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cursor"
+          }
+        },
+        "required": [
+          "author_id",
+          "category"
+        ],
+        "title": "query_author_dataArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "records": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Records",
+            "type": "array"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "records",
+          "count",
+          "has_more",
+          "next_cursor"
+        ],
+        "title": "Page",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "query_comments",
+      "description": "Read comments and coverage. Use first_seen_since to find late-discovered new records.",
+      "inputSchema": {
+        "properties": {
+          "post_id": {
+            "maxLength": 32,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "title": "Post Id",
+            "type": "string"
+          },
+          "scope": {
+            "default": "thread",
+            "enum": [
+              "direct",
+              "thread"
+            ],
+            "title": "Scope",
+            "type": "string"
+          },
+          "parent_comment_id": {
+            "anyOf": [
+              {
+                "maxLength": 32,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Parent Comment Id"
+          },
+          "published_since": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Published Since"
+          },
+          "first_seen_since": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "First Seen Since"
+          },
+          "author_id": {
+            "anyOf": [
+              {
+                "maxLength": 32,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Author Id"
+          },
+          "limit": {
+            "default": 50,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cursor"
+          }
+        },
+        "required": [
+          "post_id"
+        ],
+        "title": "query_commentsArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "records": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Records",
+            "type": "array"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "coverage": {
+            "additionalProperties": true,
+            "title": "Coverage",
+            "type": "object"
+          }
+        },
+        "required": [
+          "records",
+          "count",
+          "has_more",
+          "next_cursor",
+          "coverage"
+        ],
+        "title": "CommentsPage",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "export_comments",
+      "description": "Queue a consistent export. Job result contains checksum, row count, coverage and a chunked resource URI.",
+      "inputSchema": {
+        "properties": {
+          "post_id": {
+            "maxLength": 32,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "title": "Post Id",
+            "type": "string"
+          },
+          "request_id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          },
+          "scope": {
+            "default": "thread",
+            "enum": [
+              "direct",
+              "thread"
+            ],
+            "title": "Scope",
+            "type": "string"
+          },
+          "format": {
+            "default": "jsonl",
+            "enum": [
+              "csv",
+              "jsonl"
+            ],
+            "title": "Format",
+            "type": "string"
+          },
+          "fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Fields"
+          },
+          "require_complete": {
+            "default": true,
+            "title": "Require Complete",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "post_id",
+          "request_id"
+        ],
+        "title": "export_commentsArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "submitted_at": {
+            "title": "Submitted At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id",
+          "status",
+          "submitted_at"
+        ],
+        "title": "JobReceipt",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "analyze_comments",
+      "description": "Queue stored-comment trends, keywords, active authors and optional limited lexical sentiment.",
+      "inputSchema": {
+        "properties": {
+          "post_id": {
+            "maxLength": 32,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "title": "Post Id",
+            "type": "string"
+          },
+          "request_id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          },
+          "since": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Since"
+          },
+          "until": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Until"
+          },
+          "bucket": {
+            "default": "day",
+            "enum": [
+              "hour",
+              "day"
+            ],
+            "title": "Bucket",
+            "type": "string"
+          },
+          "timezone": {
+            "default": "UTC",
+            "title": "Timezone",
+            "type": "string"
+          },
+          "top_k": {
+            "default": 20,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Top K",
+            "type": "integer"
+          },
+          "include_sentiment": {
+            "default": false,
+            "title": "Include Sentiment",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "post_id",
+          "request_id"
+        ],
+        "title": "analyze_commentsArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "submitted_at": {
+            "title": "Submitted At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id",
+          "status",
+          "submitted_at"
+        ],
+        "title": "JobReceipt",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "analyze_author",
+      "description": "Queue stored-author cadence, text features and comment evidence. Does not infer semantic style by itself.",
+      "inputSchema": {
+        "properties": {
+          "author_id": {
+            "maxLength": 32,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "title": "Author Id",
+            "type": "string"
+          },
+          "since": {
+            "title": "Since",
+            "type": "string"
+          },
+          "until": {
+            "title": "Until",
+            "type": "string"
+          },
+          "request_id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          },
+          "timezone": {
+            "default": "UTC",
+            "title": "Timezone",
+            "type": "string"
+          },
+          "post_types": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "original",
+                    "reply",
+                    "quote",
+                    "repost"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Post Types"
+          },
+          "sample_limit": {
+            "default": 10000,
+            "maximum": 100000,
+            "minimum": 1,
+            "title": "Sample Limit",
+            "type": "integer"
+          },
+          "include_comments": {
+            "default": true,
+            "title": "Include Comments",
+            "type": "boolean"
+          },
+          "viral_metric": {
+            "default": "likes",
+            "enum": [
+              "likes",
+              "comments",
+              "reposts",
+              "views",
+              "quotes"
+            ],
+            "title": "Viral Metric",
+            "type": "string"
+          },
+          "viral_min_value": {
+            "default": 10,
+            "minimum": 0,
+            "title": "Viral Min Value",
+            "type": "integer"
+          },
+          "viral_ratio": {
+            "default": 2.0,
+            "maximum": 1000,
+            "minimum": 1,
+            "title": "Viral Ratio",
+            "type": "number"
+          }
+        },
+        "required": [
+          "author_id",
+          "since",
+          "until",
+          "request_id"
+        ],
+        "title": "analyze_authorArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "submitted_at": {
+            "title": "Submitted At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id",
+          "status",
+          "submitted_at"
+        ],
+        "title": "JobReceipt",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "accounts_register",
+      "description": "Register worker environment references, never token values. Login checks are required before collection.",
+      "inputSchema": {
+        "$defs": {
+          "AccountEntry": {
+            "additionalProperties": false,
+            "properties": {
+              "credential_ref": {
+                "maxLength": 128,
+                "pattern": "^SCWEET_X_[A-Z0-9_]+$",
+                "title": "Credential Ref",
+                "type": "string"
+              },
+              "label": {
+                "maxLength": 80,
+                "minLength": 1,
+                "title": "Label",
+                "type": "string"
+              },
+              "proxy_ref": {
+                "anyOf": [
+                  {
+                    "maxLength": 128,
+                    "pattern": "^SCWEET_PROXY_[A-Z0-9_]+$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Proxy Ref"
+              }
+            },
+            "required": [
+              "credential_ref",
+              "label"
+            ],
+            "title": "AccountEntry",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/$defs/AccountEntry"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Entries",
+            "type": "array"
+          },
+          "request_id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "entries",
+          "request_id"
+        ],
+        "title": "accounts_registerArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "accounts": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Accounts",
+            "type": "array"
+          }
+        },
+        "required": [
+          "accounts"
+        ],
+        "title": "AccountsResult",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "accounts_list",
+      "description": "Read safe account health and capability summaries, with no secret values.",
+      "inputSchema": {
+        "properties": {
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "unchecked",
+                  "valid",
+                  "invalid",
+                  "locked",
+                  "unknown",
+                  "duplicate"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "limit": {
+            "default": 50,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cursor"
+          }
+        },
+        "title": "accounts_listArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "records": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Records",
+            "type": "array"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "records",
+          "count",
+          "has_more",
+          "next_cursor"
+        ],
+        "title": "Page",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "accounts_check",
+      "description": "Queue serial login or capability checks. A failed probe does not prove a token is invalid.",
+      "inputSchema": {
+        "properties": {
+          "account_ids": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:-]+$",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Account Ids",
+            "type": "array"
+          },
+          "request_id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          },
+          "level": {
+            "default": "login",
+            "enum": [
+              "login",
+              "capability"
+            ],
+            "title": "Level",
+            "type": "string"
+          },
+          "capabilities": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "timeline",
+                    "lookup",
+                    "comments"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Capabilities"
+          }
+        },
+        "required": [
+          "account_ids",
+          "request_id"
+        ],
+        "title": "accounts_checkArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "submitted_at": {
+            "title": "Submitted At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id",
+          "status",
+          "submitted_at"
+        ],
+        "title": "JobReceipt",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "accounts_set_state",
+      "description": "Enable or disable use of account references. Disabling blocks the next request reservation.",
+      "inputSchema": {
+        "properties": {
+          "account_ids": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:-]+$",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Account Ids",
+            "type": "array"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "account_ids",
+          "enabled"
+        ],
+        "title": "accounts_set_stateArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "account_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Account Ids",
+            "type": "array"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "account_ids",
+          "enabled"
+        ],
+        "title": "StateResult",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "jobs_get",
+      "description": "Read durable job state, progress, result or sanitized error. queued/running are nonterminal.",
+      "inputSchema": {
+        "properties": {
+          "job_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_.:-]+$",
+            "title": "Job Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id"
+        ],
+        "title": "jobs_getArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "submitted_at": {
+            "title": "Submitted At",
+            "type": "string"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "progress": {
+            "additionalProperties": true,
+            "title": "Progress",
+            "type": "object"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "attempts": {
+            "title": "Attempts",
+            "type": "integer"
+          },
+          "cancel_requested": {
+            "title": "Cancel Requested",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "job_id",
+          "kind",
+          "status",
+          "submitted_at",
+          "started_at",
+          "finished_at",
+          "progress",
+          "result",
+          "error",
+          "attempts",
+          "cancel_requested"
+        ],
+        "title": "JobState",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "jobs_cancel",
+      "description": "Request cancellation at the next safe boundary. Already committed pages remain stored.",
+      "inputSchema": {
+        "properties": {
+          "job_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_.:-]+$",
+            "title": "Job Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id"
+        ],
+        "title": "jobs_cancelArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "cancellation_requested": {
+            "title": "Cancellation Requested",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "job_id",
+          "status",
+          "cancellation_requested"
+        ],
+        "title": "CancelResult",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "events_query",
+      "description": "Read unacknowledged events. Start each polling cycle without a cursor to include late commits.",
+      "inputSchema": {
+        "properties": {
+          "consumer_ref": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_.:-]+$",
+            "title": "Consumer Ref",
+            "type": "string"
+          },
+          "types": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "new_post",
+                    "metric_change",
+                    "content_changed",
+                    "availability_changed"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Types"
+          },
+          "limit": {
+            "default": 50,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cursor"
+          }
+        },
+        "required": [
+          "consumer_ref"
+        ],
+        "title": "events_queryArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "records": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Records",
+            "type": "array"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "records",
+          "count",
+          "has_more",
+          "next_cursor"
+        ],
+        "title": "Page",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "events_ack",
+      "description": "Acknowledge only events successfully processed by this consumer; duplicate acknowledgments are safe.",
+      "inputSchema": {
+        "properties": {
+          "consumer_ref": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_.:-]+$",
+            "title": "Consumer Ref",
+            "type": "string"
+          },
+          "event_ids": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:-]+$",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Event Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "consumer_ref",
+          "event_ids"
+        ],
+        "title": "events_ackArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "acknowledged_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Acknowledged Ids",
+            "type": "array"
+          },
+          "already_acknowledged_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Already Acknowledged Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "acknowledged_ids",
+          "already_acknowledged_ids"
+        ],
+        "title": "AckResult",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "mcp_host": "127.0.0.1",
+  "mcp_port": 8765,
+  "mcp_credentials_file": null,
+  "mcp_worker_poll_s": 2.0,
+  "mcp_job_max_pages": 100,
+  "mcp_job_max_runtime_s": 300,
+  "mcp_artifact_dir": "outputs/mcp",
+  "mcp_manifest_db_path": "outputs/mcp/manifest.sqlite3",
+  "mcp_notification_destinations": {},
+  "mcp_schedule_poll_s": 60,
+  "mcp_notifications_enabled": false,
+  "mcp_missing_check_interval_s": 3600,
+  "mcp_missing_confirmations": 3
+}

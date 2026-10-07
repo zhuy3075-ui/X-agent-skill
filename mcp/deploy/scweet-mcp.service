@@ -1,0 +1,17 @@
+[Unit]
+Description=Scweet MCP API
+After=network-online.target postgresql.service
+
+[Service]
+Type=simple
+User=scweet
+WorkingDirectory=/opt/scweet
+EnvironmentFile=/etc/scweet/api.env
+ExecStart=/opt/scweet/.venv/bin/python /opt/scweet/mcp/server.py --transport streamable-http --config /etc/scweet/config.json
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

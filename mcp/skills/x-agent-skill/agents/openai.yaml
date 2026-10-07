@@ -1,0 +1,7 @@
+policy:
+  allow_implicit_invocation: true
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "scweet-monitoring"
+      description: "已连接的 X 帖子、评论采集与博主分析 MCP 服务"

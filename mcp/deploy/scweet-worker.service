@@ -1,0 +1,17 @@
+[Unit]
+Description=Scweet background collector
+After=network-online.target postgresql.service
+
+[Service]
+Type=simple
+User=scweet
+WorkingDirectory=/opt/scweet
+EnvironmentFile=/etc/scweet/worker.env
+ExecStart=/opt/scweet/.venv/bin/python /opt/scweet/mcp/worker.py --config /etc/scweet/config.json
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

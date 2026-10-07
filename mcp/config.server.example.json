@@ -1,0 +1,12 @@
+{
+  "mcp_host": "127.0.0.1",
+  "mcp_port": 8765,
+  "mcp_credentials_file": null,
+  "mcp_artifact_dir": "/var/lib/scweet-mcp/exports",
+  "mcp_manifest_db_path": "/var/lib/scweet-mcp/manifest.sqlite3",
+  "mcp_notification_destinations": {},
+  "mcp_notifications_enabled": false,
+  "mcp_schedule_poll_s": 60,
+  "mcp_missing_check_interval_s": 3600,
+  "mcp_missing_confirmations": 3
+}

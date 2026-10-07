@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "defaults": {
+    "timezone": null,
+    "post_types": [
+      "original",
+      "quote"
+    ],
+    "comment_scope": "thread",
+    "max_pages": 50,
+    "max_runtime_seconds": 300
+  },
+  "scenarios": {
+    "browse": {
+      "lookback_days": 7,
+      "max_posts": 50,
+      "include_comments": false,
+      "max_pages": 20,
+      "max_runtime_seconds": 120
+    },
+    "profile": {
+      "lookback_days": 30,
+      "max_posts": 100,
+      "include_comments": true,
+      "max_comment_posts": 20
+    },
+    "materials": {
+      "lookback_days": 30,
+      "max_posts": 100,
+      "include_comments": false,
+      "suggestion_count": 5
+    },
+    "compare": {
+      "lookback_days": 30,
+      "max_posts": 100,
+      "include_comments": false,
+      "budget_scope": "all_targets"
+    },
+    "growth": {
+      "lookback_days": 7,
+      "bucket": "day"
+    },
+    "monitor": {
+      "discovery_interval_seconds": 3600,
+      "initial_backfill_days": 7,
+      "comments_interval_seconds": null,
+      "destination_refs": [],
+      "metric_schedule": [
+        {
+          "max_post_age_hours": 720,
+          "interval_seconds": 3600
+        }
+      ],
+      "lookup_posts_per_run": 5,
+      "report_mode": "on_demand"
+    }
+  },
+  "confirmed_preferences": {},
+  "question_habits": [],
+  "last_request": null,
+  "updated_at": null,
+  "pagination": {
+    "max_batches": 20,
+    "max_total_pages": 2000,
+    "max_total_active_seconds": 1800,
+    "batch_max_pages": 100,
+    "batch_max_runtime_seconds": 300
+  }
+}
