@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.1 — 2026-10-07
+
+- Remove development reports, launch copy, internal agent instructions and old development guides from the distribution.
+- Document browser auth_token retrieval, local installation, account registration and troubleshooting.
+- Add a complete same-host server guide with database roles, private paths, systemd, HTTPS, upgrade and backup steps.
+- Align server templates and simplify the skill to current supported operational rules.
+- Preserve the complete runtime and existing user credentials and preferences.
+
 ## v1.0.0 — 2026-10-07
 
 First public release of the PostgreSQL-backed X research MCP service and Chinese skills.

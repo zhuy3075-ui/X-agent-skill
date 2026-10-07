@@ -5,10 +5,11 @@ After=network-online.target postgresql.service
 [Service]
 Type=simple
 User=scweet
-WorkingDirectory=/opt/scweet
+WorkingDirectory=/opt/x-agent-skill
 EnvironmentFile=/etc/scweet/worker.env
-ExecStart=/opt/scweet/.venv/bin/python /opt/scweet/mcp/worker.py --config /etc/scweet/config.json
+ExecStart=/opt/x-agent-skill/.venv/bin/python /opt/x-agent-skill/run.py worker --config /etc/scweet/config.json
 Restart=on-failure
+TimeoutStopSec=30
 RestartSec=5
 UMask=0077
 NoNewPrivileges=true

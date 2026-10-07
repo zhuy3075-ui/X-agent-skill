@@ -82,7 +82,7 @@ metadata:
 同一版本的主动验证至少间隔 30 分钟。缓存读取成功、MCP 查询成功不代表 X 登录有效。
 当前后端尚未实现这项缓存保证；不要自行用 `checked_at` 冒充完整缓存证据，
 也不要承诺采集进程不会再次验证。无需时不额外调用 `accounts_check`。
-详细设计、缓存失效条件及当前缺口见 [四项处理策略](references/processing-policy.md)。
+当前凭据、缓存和复用边界见 [处理约定](references/processing-policy.md)。
 
 ## 已有数据优先与任务路由
 
