@@ -21,7 +21,7 @@ def load_settings(path: str | None = None) -> ScweetConfig:
         config = ScweetConfig(**values)
     except (OSError, ValueError, ValidationError):
         raise StoreError("CONFIG_ERROR: Read a valid JSON configuration with ScweetConfig field names.") from None
-    for name in ("mcp_artifact_dir", "mcp_manifest_db_path", "mcp_credentials_file"):
+    for name in ("mcp_artifact_dir", "mcp_manifest_db_path", "mcp_credentials_file", "mcp_knowledge_base_dir"):
         if getattr(config, name) is None:
             continue
         value = Path(getattr(config, name)).expanduser()

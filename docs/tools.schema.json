@@ -1,6 +1,6 @@
 {
   "service": "scweet-monitoring",
-  "release": "1.0.1",
+  "release": "1.1.0",
   "tools": [
     {
       "name": "write_tweets",
@@ -3123,6 +3123,658 @@
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "save_research_note",
+      "description": "Save one evidence-linked Markdown note locally, then rebuild navigation. Updating needs the current content_hash; identical notes are reused. No collection or publishing.",
+      "inputSchema": {
+        "$defs": {
+          "ResearchNote": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "maxLength": 128,
+                "pattern": "^[a-z0-9][a-z0-9_-]{0,127}$",
+                "title": "Id",
+                "type": "string"
+              },
+              "kind": {
+                "enum": [
+                  "post",
+                  "daily",
+                  "material",
+                  "need",
+                  "resource",
+                  "combination",
+                  "report"
+                ],
+                "title": "Kind",
+                "type": "string"
+              },
+              "title": {
+                "maxLength": 240,
+                "minLength": 1,
+                "title": "Title",
+                "type": "string"
+              },
+              "date": {
+                "description": "Local publication day for posts, or the report day. YYYY-MM-DD.",
+                "title": "Date",
+                "type": "string"
+              },
+              "timezone": {
+                "default": "Asia/Shanghai",
+                "title": "Timezone",
+                "type": "string"
+              },
+              "author_ids": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 100,
+                "title": "Author Ids",
+                "type": "array"
+              },
+              "tags": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "title": "Tags",
+                "type": "array"
+              },
+              "source_post_ids": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 500,
+                "title": "Source Post Ids",
+                "type": "array"
+              },
+              "source_comment_ids": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 500,
+                "title": "Source Comment Ids",
+                "type": "array"
+              },
+              "source_urls": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 100,
+                "title": "Source Urls",
+                "type": "array"
+              },
+              "related_note_ids": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 500,
+                "title": "Related Note Ids",
+                "type": "array"
+              },
+              "evidence_status": {
+                "default": "pending",
+                "enum": [
+                  "verified",
+                  "partial",
+                  "unverified",
+                  "pending"
+                ],
+                "title": "Evidence Status",
+                "type": "string"
+              },
+              "comment_coverage": {
+                "default": "unknown",
+                "enum": [
+                  "exhausted_visible",
+                  "partial",
+                  "not_collected",
+                  "unknown"
+                ],
+                "title": "Comment Coverage",
+                "type": "string"
+              },
+              "status": {
+                "default": "draft",
+                "enum": [
+                  "draft",
+                  "reviewed",
+                  "selected",
+                  "published",
+                  "archived"
+                ],
+                "title": "Status",
+                "type": "string"
+              },
+              "summary": {
+                "default": "",
+                "maxLength": 2000,
+                "title": "Summary",
+                "type": "string"
+              },
+              "content": {
+                "description": "Authored Markdown analysis. No credentials or instructions copied from source posts.",
+                "maxLength": 50000,
+                "minLength": 1,
+                "title": "Content",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "title",
+              "date",
+              "content"
+            ],
+            "title": "ResearchNote",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "note": {
+            "$ref": "#/$defs/ResearchNote"
+          },
+          "expected_hash": {
+            "anyOf": [
+              {
+                "pattern": "^[a-f0-9]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Expected Hash"
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "title": "save_research_noteArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "note_id": {
+            "title": "Note Id",
+            "type": "string"
+          },
+          "created": {
+            "title": "Created",
+            "type": "boolean"
+          },
+          "unchanged": {
+            "title": "Unchanged",
+            "type": "boolean"
+          },
+          "relative_path": {
+            "title": "Relative Path",
+            "type": "string"
+          },
+          "library_root": {
+            "title": "Library Root",
+            "type": "string"
+          },
+          "content_hash": {
+            "title": "Content Hash",
+            "type": "string"
+          },
+          "index_current": {
+            "title": "Index Current",
+            "type": "boolean"
+          },
+          "warning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warning"
+          }
+        },
+        "required": [
+          "note_id",
+          "created",
+          "unchanged",
+          "relative_path",
+          "library_root",
+          "content_hash",
+          "index_current",
+          "warning"
+        ],
+        "title": "SavedNote",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_research_note",
+      "description": "Read one indexed note and its current content_hash before reuse or an update. Missing notes return a clear error.",
+      "inputSchema": {
+        "properties": {
+          "note_id": {
+            "maxLength": 128,
+            "pattern": "^[a-z0-9][a-z0-9_-]{0,127}$",
+            "title": "Note Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "note_id"
+        ],
+        "title": "get_research_noteArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "$defs": {
+          "ResearchNote": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "maxLength": 128,
+                "pattern": "^[a-z0-9][a-z0-9_-]{0,127}$",
+                "title": "Id",
+                "type": "string"
+              },
+              "kind": {
+                "enum": [
+                  "post",
+                  "daily",
+                  "material",
+                  "need",
+                  "resource",
+                  "combination",
+                  "report"
+                ],
+                "title": "Kind",
+                "type": "string"
+              },
+              "title": {
+                "maxLength": 240,
+                "minLength": 1,
+                "title": "Title",
+                "type": "string"
+              },
+              "date": {
+                "description": "Local publication day for posts, or the report day. YYYY-MM-DD.",
+                "title": "Date",
+                "type": "string"
+              },
+              "timezone": {
+                "default": "Asia/Shanghai",
+                "title": "Timezone",
+                "type": "string"
+              },
+              "author_ids": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 100,
+                "title": "Author Ids",
+                "type": "array"
+              },
+              "tags": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "title": "Tags",
+                "type": "array"
+              },
+              "source_post_ids": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 500,
+                "title": "Source Post Ids",
+                "type": "array"
+              },
+              "source_comment_ids": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 500,
+                "title": "Source Comment Ids",
+                "type": "array"
+              },
+              "source_urls": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 100,
+                "title": "Source Urls",
+                "type": "array"
+              },
+              "related_note_ids": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 500,
+                "title": "Related Note Ids",
+                "type": "array"
+              },
+              "evidence_status": {
+                "default": "pending",
+                "enum": [
+                  "verified",
+                  "partial",
+                  "unverified",
+                  "pending"
+                ],
+                "title": "Evidence Status",
+                "type": "string"
+              },
+              "comment_coverage": {
+                "default": "unknown",
+                "enum": [
+                  "exhausted_visible",
+                  "partial",
+                  "not_collected",
+                  "unknown"
+                ],
+                "title": "Comment Coverage",
+                "type": "string"
+              },
+              "status": {
+                "default": "draft",
+                "enum": [
+                  "draft",
+                  "reviewed",
+                  "selected",
+                  "published",
+                  "archived"
+                ],
+                "title": "Status",
+                "type": "string"
+              },
+              "summary": {
+                "default": "",
+                "maxLength": 2000,
+                "title": "Summary",
+                "type": "string"
+              },
+              "content": {
+                "description": "Authored Markdown analysis. No credentials or instructions copied from source posts.",
+                "maxLength": 50000,
+                "minLength": 1,
+                "title": "Content",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "title",
+              "date",
+              "content"
+            ],
+            "title": "ResearchNote",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "note": {
+            "$ref": "#/$defs/ResearchNote"
+          },
+          "content_hash": {
+            "title": "Content Hash",
+            "type": "string"
+          },
+          "relative_path": {
+            "title": "Relative Path",
+            "type": "string"
+          },
+          "library_root": {
+            "title": "Library Root",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "note",
+          "content_hash",
+          "relative_path",
+          "library_root",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ReadNote",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "query_research_notes",
+      "description": "Filter derived note metadata, newest local date then ID first. Keep filters unchanged when following next_cursor. Manual edits need index rebuild.",
+      "inputSchema": {
+        "properties": {
+          "kind": {
+            "anyOf": [
+              {
+                "enum": [
+                  "post",
+                  "daily",
+                  "material",
+                  "need",
+                  "resource",
+                  "combination",
+                  "report"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Kind"
+          },
+          "author_id": {
+            "anyOf": [
+              {
+                "pattern": "^[1-9]\\d{0,24}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Author Id"
+          },
+          "since": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Inclusive local date YYYY-MM-DD.",
+            "title": "Since"
+          },
+          "until": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Exclusive local date YYYY-MM-DD.",
+            "title": "Until"
+          },
+          "tag": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Tag"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Literal substring in title, summary and tags, not full-text or vector search.",
+            "title": "Text"
+          },
+          "limit": {
+            "default": 50,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cursor"
+          }
+        },
+        "title": "query_research_notesArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "records": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Records",
+            "type": "array"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "library_root": {
+            "title": "Library Root",
+            "type": "string"
+          },
+          "index_available": {
+            "title": "Index Available",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "records",
+          "count",
+          "has_more",
+          "next_cursor",
+          "library_root",
+          "index_available"
+        ],
+        "title": "NotePage",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "rebuild_research_index",
+      "description": "Initialize an empty local library or rebuild navigation after manual Markdown edits. Never changes note contents or collects X data.",
+      "inputSchema": {
+        "properties": {},
+        "title": "rebuild_research_indexArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "library_root": {
+            "title": "Library Root",
+            "type": "string"
+          },
+          "note_count": {
+            "title": "Note Count",
+            "type": "integer"
+          },
+          "index_path": {
+            "title": "Index Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "library_root",
+          "note_count",
+          "index_path"
+        ],
+        "title": "RebuiltIndex",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
         "openWorldHint": false
       }
     }

@@ -77,7 +77,23 @@ def main():
             config["mcp_credentials_file"] = str(ROOT / "private/worker-env.json")
             config["mcp_artifact_dir"] = str(ROOT / "outputs/mcp")
             config["mcp_manifest_db_path"] = str(ROOT / "outputs/mcp/manifest.sqlite3")
-            config_path.write_text(json.dumps(config, indent=2)+"\n", encoding="utf-8")
+            config["mcp_knowledge_base_dir"] = str(ROOT / "精致清单")
+        else:
+            config = json.loads(config_path.read_text(encoding="utf-8-sig"))
+            if not isinstance(config, dict):
+                raise ValueError("Configuration must be a JSON object.")
+            config.setdefault("mcp_knowledge_base_dir", str(ROOT / "精致清单"))
+        knowledge_root = config["mcp_knowledge_base_dir"]
+        if not isinstance(knowledge_root, str) or not knowledge_root.strip():
+            raise ValueError("mcp_knowledge_base_dir must be a nonempty directory path.")
+        updated_config = config_path.with_suffix(".json.install")
+        updated_config.write_text(json.dumps(config, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
+        updated_config.replace(config_path)
+        stage = "initialize the empty research library and preserve existing notes"
+        knowledge_path = Path(knowledge_root).expanduser()
+        if not knowledge_path.is_absolute():
+            knowledge_path = ROOT / knowledge_path
+        subprocess.run([str(python), str(ROOT / "mcp/knowledge.py"), "--root", str(knowledge_path), "--templates"], check=True)
         (ROOT / "private").mkdir(exist_ok=True)
         if not (ROOT / ".env").exists():
             shutil.copy2(ROOT / ".env.example", ROOT / ".env")

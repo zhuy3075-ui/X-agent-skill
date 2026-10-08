@@ -57,6 +57,7 @@ class ScweetConfig(BaseModel):
     mcp_unknown_cooldown_s: int = Field(default=60, ge=1)
     mcp_overlap_s: int = Field(default=3600, ge=0)
     mcp_artifact_dir: str = "outputs/mcp"
+    mcp_knowledge_base_dir: str = Field(default="outputs/mcp/knowledge-base", min_length=1)
     mcp_manifest_db_path: str = "outputs/mcp/manifest.sqlite3"
     mcp_resource_chunk_bytes: int = Field(default=65536, ge=1024, le=1048576)
     mcp_analysis_max_records: int = Field(default=10000, ge=1)

@@ -65,5 +65,11 @@
     "max_total_active_seconds": 1800,
     "batch_max_pages": 100,
     "batch_max_runtime_seconds": 300
+  },
+  "knowledge_library": {
+    "report_format": "markdown",
+    "combination_target": 5,
+    "collection_on_report": "reuse_saved_first",
+    "generate_only_on_request": true
   }
 }

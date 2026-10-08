@@ -20,8 +20,8 @@ async def check(config):
         async with ClientSession(read, write) as session:
             await session.initialize()
             names = {item.name for item in (await session.list_tools()).tools}
-            required = {"collect_author", "continue_comments", "query_post_changes", "monitors_list"}
-            if len(names) != 31 or not required <= names:
+            required = {"collect_author", "continue_comments", "query_post_changes", "monitors_list", "save_research_note", "get_research_note", "query_research_notes", "rebuild_research_index"}
+            if len(names) != 35 or not required <= names:
                 raise RuntimeError("Unexpected MCP tool set; install the matching release.")
             result = await session.call_tool("monitors_list", {"limit": 1})
             if result.isError:

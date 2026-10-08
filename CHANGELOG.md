@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.1.0 — 2026-10-08
+
+- Add four MCP tools to save, read, filter and reindex authored Markdown research notes (35 tools total).
+- Link posts, daily summaries, materials, comment needs, resources, publication combinations and decision reports.
+- Preserve stable IDs, revision history, source evidence and user edits through explicit hash-based updates.
+- Bundle seven Chinese templates and a single updated skill; initialize an empty local library without collecting X data.
+- Keep PostgreSQL source data unchanged and exclude personal notes from public Git history.
+
 ## v1.0.1 — 2026-10-07
 
 - Remove development reports, launch copy, internal agent instructions and old development guides from the distribution.

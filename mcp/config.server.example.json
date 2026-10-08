@@ -8,5 +8,6 @@
   "mcp_notifications_enabled": false,
   "mcp_schedule_poll_s": 60,
   "mcp_missing_check_interval_s": 3600,
-  "mcp_missing_confirmations": 3
+  "mcp_missing_confirmations": 3,
+  "mcp_knowledge_base_dir": "/var/lib/scweet-mcp/knowledge-base"
 }

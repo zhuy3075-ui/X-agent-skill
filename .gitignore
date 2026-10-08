@@ -18,3 +18,7 @@ pgpass*
 worker-env.json
 api-token.txt
 mcp-client.local.json
+
+# Personal research library; distribute templates only.
+/精致清单/
+/knowledge-base/

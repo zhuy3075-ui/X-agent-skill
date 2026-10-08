@@ -13,10 +13,10 @@ PostgreSQL 仅监听本机；X 采集网络／代理由部署者配置。使用�
 ```bash
 sudo useradd --system --home-dir /var/lib/scweet-mcp --create-home --shell /usr/sbin/nologin scweet
 sudo install -d -o scweet -g scweet -m 0750 /opt/x-agent-skill
-sudo -u scweet git clone --branch v1.0.1 https://github.com/zhuy3075-ui/X-agent-skill.git /opt/x-agent-skill
+sudo -u scweet git clone --branch v1.1.0 https://github.com/zhuy3075-ui/X-agent-skill.git /opt/x-agent-skill
 sudo -u scweet /usr/bin/python3 /opt/x-agent-skill/install.py --skip-skills --no-register-codex
 sudo install -d -o root -g scweet -m 0750 /etc/scweet
-sudo install -d -o scweet -g scweet -m 0700 /var/lib/scweet-mcp/private /var/lib/scweet-mcp/exports
+sudo install -d -o scweet -g scweet -m 0700 /var/lib/scweet-mcp/private /var/lib/scweet-mcp/exports /var/lib/scweet-mcp/knowledge-base
 sudo install -o root -g scweet -m 0640 /opt/x-agent-skill/mcp/config.server.example.json /etc/scweet/config.json
 ```
 
@@ -93,7 +93,8 @@ ALTER DEFAULT PRIVILEGES FOR ROLE scweet_owner IN SCHEMA public
 {
   "mcp_credentials_file": "/var/lib/scweet-mcp/private/worker-env.json",
   "mcp_artifact_dir": "/var/lib/scweet-mcp/exports",
-  "mcp_manifest_db_path": "/var/lib/scweet-mcp/manifest.sqlite3"
+  "mcp_manifest_db_path": "/var/lib/scweet-mcp/manifest.sqlite3",
+  "mcp_knowledge_base_dir": "/var/lib/scweet-mcp/knowledge-base"
 }
 ```
 
@@ -153,7 +154,7 @@ API 只绑定 `127.0.0.1:8765`。如果服务器 PostgreSQL 单元名不同，�
 ## 6. 完成验收
 
 1. 确认两个 systemd 服务运行，检查错误时使用 `journalctl -u scweet-mcp -u scweet-worker`。
-2. 用 MCP 客户端连接 HTTPS 地址，确认发现 31 个工具，执行 `monitors_list` 只读查询。
+2. 用 MCP 客户端连接 HTTPS 地址，确认发现 35 个工具，执行 `monitors_list` 只读查询。
    仅看到进程运行或 curl 返回 HTTP 状态，不代表完成了 MCP 协议验收。
 3. 调用 accounts_register 注册 A／B 等引用，accounts_check 检查，jobs_get 确认结果；
    只有有效账号进入采集池。登录检查成功不保证每个帖子都可见。
@@ -177,7 +178,7 @@ sudo -u scweet env SCWEET_MCP_DATABASE_URL='host=127.0.0.1 port=5432 dbname=scwe
 ```bash
 sudo systemctl stop scweet-worker scweet-mcp
 sudo -u scweet git -C /opt/x-agent-skill fetch --tags
-sudo -u scweet git -C /opt/x-agent-skill checkout v1.0.1
+sudo -u scweet git -C /opt/x-agent-skill checkout v1.1.0
 sudo -u scweet /opt/x-agent-skill/.venv/bin/python /opt/x-agent-skill/install.py --skip-skills --no-register-codex
 ```
 
@@ -189,3 +190,15 @@ sudo -u scweet /opt/x-agent-skill/.venv/bin/python /opt/x-agent-skill/install.py
 Windows／macOS 本机升级同样先停止 Worker 和客户端 stdio 服务，再选择标签并重跑安装器；
 技能个人偏好会保留，凭据文件不会因重装被覆盖。停止监测用 monitor_set_state，
 而停止整个服务器用 `sudo systemctl stop scweet-worker scweet-mcp`。
+
+## 研究知识库迁移
+
+首次部署可初始化目录与七份模板（不采集数据）：
+
+```bash
+sudo -u scweet /opt/x-agent-skill/.venv/bin/python /opt/x-agent-skill/mcp/knowledge.py --root /var/lib/scweet-mcp/knowledge-base --templates
+```
+
+知识库根目录由 mcp_knowledge_base_dir 指定，必须由服务用户读写。迁移时备份整个目录（含 .history），
+不要只复制可重建的 index.json。部署到远端后 MD 保存在服务器，客户端收到的服务器路径不能当作其本地文件。
+用户要求保存报告时由 Agent 调用研究笔记工具；初始目录和模板不代表有实际数据，不自动创建监测或日报。

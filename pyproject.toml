@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "x-agent-skill"
-version = "1.0.1"
+version = "1.1.0"
 description = "An MCP server, collector and skill for X creator research and PostgreSQL-backed monitoring"
 readme = "README.md"
 requires-python = ">=3.10"
